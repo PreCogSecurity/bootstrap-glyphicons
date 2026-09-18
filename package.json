@@ -1,0 +1,27 @@
+{
+  "name": "bootstrap-glyphicons",
+  "version": "1.0.0",
+  "description": "Bootstrap v2 support for the 400+ GLYPHICONS icon set as a CSS sprite (icon-large classes).",
+  "keywords": [
+    "bootstrap",
+    "bootstrap-2",
+    "glyphicons",
+    "icons",
+    "css",
+    "sprite"
+  ],
+  "license": "SEE LICENSE IN LICENSE.md",
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "css/",
+    "img/",
+    "glyphicons.png",
+    "README.md",
+    "LICENSE.md"
+  ],
+  "scripts": {
+    "test": "node tests/verify_css_mapping.js"
+  }
+}
