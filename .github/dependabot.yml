@@ -1,0 +1,40 @@
+# Dependency and base-image update automation.
+#
+# This repository declares no runtime dependencies, but the lockfile, the npm
+# version embedded in CI, and the nginx base image all move over time. Dependabot
+# opens a reviewable pull request instead of letting a consumer inherit an
+# unnoticed CVE or an unpatched base image.
+version: 2
+updates:
+  # The package metadata and lockfile.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+
+  # GitHub Actions are pinned by tag in the workflows; this keeps those tags
+    # (and the Node runtime they install) current.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - ci
+
+  # nginx base image patches.
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - security

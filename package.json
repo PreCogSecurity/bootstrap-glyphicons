@@ -10,9 +10,17 @@
     "css",
     "sprite"
   ],
+  "homepage": "https://github.com/PreCogSecurity/bootstrap-glyphicons#readme",
+  "bugs": {
+    "url": "https://github.com/PreCogSecurity/bootstrap-glyphicons/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PreCogSecurity/bootstrap-glyphicons.git"
+  },
   "license": "SEE LICENSE IN LICENSE.md",
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "files": [
     "css/",
@@ -22,6 +30,7 @@
     "LICENSE.md"
   ],
   "scripts": {
-    "test": "node tests/verify_css_mapping.js"
+    "test": "node --test",
+    "lint": "node tools/lint.js"
   }
 }
