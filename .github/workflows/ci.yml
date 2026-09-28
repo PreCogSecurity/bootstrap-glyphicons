@@ -5,13 +5,28 @@ on:
     branches: [master, main]
   pull_request:
 
+# Least privilege: nothing in this workflow needs to write to the repository,
+# create releases, or read secrets. A compromised third-party action therefore
+# cannot push code or exfiltrate a token from a job that only runs tests.
+permissions:
+  contents: read
+
+# Superseded runs on the same ref are cancelled: saves runner minutes and stops
+# an old green run from masking a newer red one.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  test:
-    name: Verify CSS/sprite mapping
+  lint:
+    name: Lint and dependency audit
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          # Do not leave the job's token in .git/config for later steps to read.
+          persist-credentials: false
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -21,6 +36,44 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Run lint
+        run: npm run lint
+
+      - name: Audit dependencies
+        # `npm audit` needs the registry, so it is a separate step from the
+        # offline-friendly lint. --audit-level=high keeps low-severity noise
+        # from blocking an otherwise green build while still failing on
+        # anything a consumer could realistically be harmed by.
+        run: npm audit --audit-level=high
+
+  test:
+    name: Test (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Matches the range in package.json engines.node. Consumers run the
+        # stylesheets in a browser, but contributors and CI run this suite, so
+        # the oldest and newest supported runtimes both have to be green.
+        node: ['20', '22', '24']
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - name: Install dependencies
+        # --ignore-scripts: this package has no dependencies and must never run
+        # lifecycle code in CI. If that ever changes, the failure should be
+        # deliberate, not automatic.
+        run: npm ci --ignore-scripts
 
       - name: Run verification tests
         run: npm test

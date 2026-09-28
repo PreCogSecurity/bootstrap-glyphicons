@@ -1,0 +1,15 @@
+# Normalise line endings so the readable stylesheet and its minified build
+# diff cleanly no matter who checks the repository out.
+* text=auto eol=lf
+
+# The sprite is binary: never let git treat it as text or apply EOL conversion.
+*.png binary
+
+# `img/glyphicons.png` is a symlink to ../glyphicons.png, not a copy. Keep it
+# recorded as a link on every platform instead of letting autocrlf rewrite the
+# link target text.
+img/glyphicons.png -text
+
+# Lockfiles and pins are read verbatim.
+package-lock.json -text
+.nvmrc -text

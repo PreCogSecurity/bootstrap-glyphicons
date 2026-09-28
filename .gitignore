@@ -1,6 +1,15 @@
 # Dependencies
 node_modules/
 
+# Local environment (only .env.example is tracked)
+.env
+.env.*
+!.env.example
+
+# Test and coverage output
+coverage/
+.nyc_output/
+
 # Logs
 *.log
 npm-debug.log*

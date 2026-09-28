@@ -1,0 +1,34 @@
+# Keep the Docker build context to the three things the image actually needs.
+# Everything excluded here is either build output, repository history, or a
+# file that must never be copied into a published image.
+
+# VCS history and metadata
+.git
+.gitattributes
+.gitignore
+.github
+.editorconfig
+
+# Secrets and local state
+.env
+.env.*
+
+# Dependencies and build output
+node_modules
+coverage
+*.log
+npm-debug.log*
+
+# Tooling and docs that the static image does not serve
+tests
+tools
+docker-compose.yml
+CONTRIBUTING.md
+SECURITY.md
+
+# `img/glyphicons.png` is a symlink to ../glyphicons.png; the Dockerfile copies
+# the sprite directly, so the link is not needed in the build context.
+img
+
+.DS_Store
+Thumbs.db

@@ -1,5 +1,28 @@
+# Local preview of the static asset pack.
+#
+# Copy .env.example to .env to change the published port or the bind address.
+# This service needs no credentials of any kind.
 services:
   web:
-    build: .
+    build:
+      context: .
+    image: bootstrap-glyphicons:local
     ports:
-      - "8080:80"
+      # Bind to loopback by default: an unauthenticated static file server has
+      # no business listening on every interface of a developer machine.
+      - "${BIND_ADDRESS:-127.0.0.1}:${PORT:-8080}:8080"
+
+    # The image never writes to its own filesystem; nginx keeps its pid and
+    # temp files on the tmpfs mounts below.
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/cache/nginx
+
+    # Nothing here needs elevated privileges.
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+    restart: unless-stopped
