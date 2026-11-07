@@ -10,6 +10,9 @@ node_modules/
 coverage/
 .nyc_output/
 
+# CI-generated dependency inventory
+/sbom.json
+
 # Logs
 *.log
 npm-debug.log*

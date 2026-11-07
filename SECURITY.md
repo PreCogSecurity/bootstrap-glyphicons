@@ -24,16 +24,26 @@ adds a dependency, a lifecycle script (`preinstall`, `postinstall`, …), a
 | No off-site, `data:`, or script-bearing CSS | `npm test` |
 | No credential patterns committed to the repository | `npm run lint` |
 | No dependency known vulnerabilities (high or critical) | CI `npm audit --audit-level=high` |
+| GitHub Actions pinned to immutable commit SHAs | `npm run lint` |
+| Dependency inventory published as `sbom.json` | CI lint job |
+| Preview rejects non-GET/HEAD methods and oversized requests | `npm test` |
 | Preview container runs non-root, read-only, with no capabilities | `npm test` |
+
+Every CI run writes the installed dependency tree to `sbom.json` and uploads it
+as a build artifact, so a consumer can audit what the package actually installs
+instead of trusting this document.
 
 ## The preview container
 
 `docker compose up --build` serves the pack locally. It is hardened by default:
 non-root uid on an unprivileged port, all capabilities dropped,
 `no-new-privileges`, read-only root filesystem, dotfiles denied, and the
-published port bound to `127.0.0.1` rather than every interface. It is still an
-**unauthenticated** static file server — if you change `BIND_ADDRESS` to
-`0.0.0.0` you have published it to your network.
+published port bound to `127.0.0.1` rather than every interface. Requests other
+than GET and HEAD are rejected, request bodies and header buffers are bounded,
+and client timeouts are explicit, so it cannot be turned into a cheap
+resource-exhaustion target. It is still an **unauthenticated** static file
+server — if you change `BIND_ADDRESS` to `0.0.0.0` you have published it to your
+network.
 
 ## Reporting a vulnerability
 

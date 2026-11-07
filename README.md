@@ -12,17 +12,22 @@ three deliverables — a stylesheet that adds `icon-large` classes, a PNG sprite
 with the 400+ GLYPHICONS, and the verification tooling that keeps the CSS/sprite
 mapping correct.
 
+The same classification is recorded in `.repo-meta.json` so asset and
+infrastructure scanners can read it without parsing prose.
+
 If you are looking for deploy targets, module boundaries, or infrastructure
 configuration, this repository is not it. It is a stylesheet and a sprite.
 
 Repository layout
 -----------------
 
+    .repo-meta.json                   Machine-readable project classification
+    CHANGELOG.md                      Release history (Keep a Changelog)
     css/bootstrap.icon-large.css      Readable source of the icon mapping
     css/bootstrap.icon-large.min.css  Minified stylesheet (the shipped file)
     docker/nginx.conf                 Server config for the local preview
     glyphicons.png                    The GLYPHICONS sprite
-    img/glyphicons.png                Symlink to the sprite (matches the
+    img/glyphicons.png                Byte-identical copy of the sprite (the
                                       ../img/glyphicons.png URL in the CSS)
     tests/*.test.js                   Verification suite (node:test)
     tools/lint.js                     Zero-dependency linter
@@ -73,8 +78,9 @@ npm pack bootstrap-glyphicons
 ```
 
 The tarball contains `css/`, `img/glyphicons.png`, `glyphicons.png`, this
-README and the licence — and nothing else. There are no dependencies to audit
-and no install scripts that execute on your machine.
+README and the licence — and nothing else. Both sprite paths are real files,
+because npm does not publish symlinks. There are no dependencies to audit and
+no install scripts that execute on your machine.
 
 Testing
 -------
@@ -87,14 +93,21 @@ nothing to install.
 npm test
 ```
 
+The aggregate check runs the linter and the suite together; this is the command
+that must pass before a merge:
+
+```sh
+npm run verify
+```
+
 It covers five areas:
 
 - `tests/css-mapping.test.js` — every `icon-large` class has a sprite offset,
   and the readable and minified stylesheets define the same icons at the same
   offsets
 - `tests/sprite-integrity.test.js` — the sprite is a structurally valid PNG, the
-  `img/glyphicons.png` symlink resolves, and no icon offset points past the edge
-  of the image (which would render a silently blank icon)
+  `img/glyphicons.png` copy matches it byte for byte, and no icon offset points
+  past the edge of the image (which would render a silently blank icon)
 - `tests/published-package.test.js` — packaging and supply-chain invariants: no
   dependencies, no install scripts, a lockfile that matches the manifest, and no
   `url()` or `@import` in the CSS that escapes the published package or reaches
@@ -164,8 +177,12 @@ Security
 
 This package has no dependencies and no runtime. That is treated as a security
 property rather than a packaging detail, and it is enforced by the test suite
-and the linter. See [SECURITY.md](SECURITY.md) for what is checked
-automatically and how to report a vulnerability privately.
+and the linter. Every CI run records the installed dependency tree as
+`sbom.json` and uploads it as a build artifact, so the zero-dependency claim is
+verifiable rather than merely asserted. The linter also rejects any workflow
+action that is not pinned to an immutable commit SHA. See
+[SECURITY.md](SECURITY.md) for what is checked automatically and how to report a
+vulnerability privately.
 
 License
 -------
@@ -179,4 +196,6 @@ Contributing
 ------------
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for how to add or fix icon mappings,
-including the required `npm test` and `npm run lint` steps.
+including the required `npm test` and `npm run lint` steps. Release history is
+recorded in [CHANGELOG.md](CHANGELOG.md); add an entry under `Unreleased` in the
+same commit as any behaviour change.

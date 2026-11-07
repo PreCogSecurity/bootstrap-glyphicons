@@ -4,7 +4,7 @@
  * Integrity checks for the GLYPHICONS sprite.
  *
  * The sprite is a single opaque binary that every consumer's browser loads. A
- * truncated sprite, a broken symlink, or an icon offset that points past the
+ * truncated sprite, an out-of-sync copy, or an icon offset that points past the
  * edge of the image all render as a *silently missing icon* on someone else's
  * production site — the worst possible failure mode for an asset pack, because
  * there is no exception and no console error. These tests turn those failures
@@ -17,7 +17,7 @@ const fs = require('node:fs');
 
 const { PATHS, rel, readText } = require('./helpers/repo');
 const { parseIconMapping, parseOffset, parseIconBox } = require('./helpers/css');
-const { readPngHeader, resolveSprite } = require('./helpers/sprite');
+const { readPngHeader } = require('./helpers/sprite');
 
 const minCss = readText(PATHS.MIN_CSS);
 const box = parseIconBox(minCss);
@@ -29,15 +29,19 @@ test('the sprite is a structurally valid PNG', () => {
   assert.ok(spriteHeader.bytes > 1024, `sprite looks truncated (${spriteHeader.bytes} bytes)`);
 });
 
-test('img/glyphicons.png resolves to the same sprite the CSS references', () => {
-  // The stylesheets hardcode `../img/glyphicons.png`, so that path must exist
-  // in a checkout *and* in the published tarball. `img/glyphicons.png` is a
-  // symlink, which git materialises as a plain text file on Windows checkouts
-  // without symlink support, so both shapes are accepted.
+test('img/glyphicons.png is a byte-identical copy of the sprite', () => {
+  // Both stylesheets hardcode `../img/glyphicons.png`. That path must be a real
+  // file rather than a symlink: npm omits symlinks from the published tarball,
+  // which would leave the shipped CSS pointing at a missing sprite.
   assert.ok(fs.existsSync(PATHS.SPRITE_LINK), `${rel(PATHS.SPRITE_LINK)} is missing`);
-  const resolved = resolveSprite(PATHS.SPRITE_LINK);
-  assert.equal(resolved, resolveSprite(PATHS.SPRITE), 'img/glyphicons.png points somewhere other than glyphicons.png');
-  assert.ok(readPngHeader(resolved), `${rel(PATHS.SPRITE_LINK)} does not resolve to PNG bytes`);
+  assert.ok(
+    fs.lstatSync(PATHS.SPRITE_LINK).isFile(),
+    `${rel(PATHS.SPRITE_LINK)} must be a regular file so npm publishes it`
+  );
+  const mirror = fs.readFileSync(PATHS.SPRITE_LINK);
+  const sprite = fs.readFileSync(PATHS.SPRITE);
+  assert.ok(mirror.equals(sprite), `${rel(PATHS.SPRITE_LINK)} is out of sync with ${rel(PATHS.SPRITE)}`);
+  assert.ok(readPngHeader(PATHS.SPRITE_LINK), `${rel(PATHS.SPRITE_LINK)} does not contain PNG bytes`);
 });
 
 test('the sprite is large enough to hold every declared icon offset', () => {

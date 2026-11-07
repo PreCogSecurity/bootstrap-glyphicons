@@ -13,10 +13,12 @@
  *
  * The rules below are the ones that actually matter for this repository:
  *   - correctness  : no syntax errors, no forgotten `test.only`, no `test.skip`
- *                    without a stated reason, no `eval`/`exec` of interpolated input
+ *                    without a stated reason, no `eval`/`exec` of interpolated
+ *                    input, no stale relative imports, no leftover `debugger`
  *   - security     : no credential patterns, no core module imported without the
  *                    `node:` prefix (so a hostile `node_modules/path` cannot
- *                    shadow a builtin), no lifecycle script creep
+ *                    shadow a builtin), no lifecycle script creep, no workflow
+ *                    action referenced by a mutable tag
  *   - consistency  : LF-ish whitespace hygiene, single trailing newline, JSON and
  *                    YAML that actually parse
  *
@@ -35,12 +37,20 @@ const JS_DIRS = ['tests', 'tools'];
 const TEXT_EXTENSIONS = new Set(['.js', '.json', '.yml', '.yaml', '.md', '.conf', '.example', '']);
 const BINARY_EXTENSIONS = new Set(['.png', '.jpg', '.gif', '.ico', '.woff', '.woff2']);
 
+// Generated, vendored or local-only paths that are not ours to lint. Keeping
+// them out of the walk means a local coverage run or SBOM download cannot turn
+// a clean checkout red.
+const SKIP_DIRS = new Set(['node_modules', '.git', 'coverage', '.nyc_output']);
+const SKIP_FILES = new Set(['sbom.json']);
+
 // Files an attacker would target to leak a credential, scoped to text files
 // we actually author. Deliberately excludes the test suite, which contains
 // these very strings as negative fixtures.
 const SECRET_SCAN_PATHS = [
   '.env.example',
   '.github',
+  '.repo-meta.json',
+  'CHANGELOG.md',
   'CONTRIBUTING.md',
   'Dockerfile',
   'LICENSE.md',
@@ -89,7 +99,7 @@ function walk(dir, out = []) {
   for (const entry of entries) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (entry.name === 'node_modules' || entry.name === '.git') {
+      if (SKIP_DIRS.has(entry.name)) {
         continue;
       }
       walk(full, out);
@@ -152,6 +162,19 @@ function lintJavaScript(file) {
     if (bareRequire) {
       report(file, number, `require('${bareRequire[1]}') should use the node: prefix`);
     }
+    // A renamed helper must not leave a stale import behind: that only fails
+    // when the affected test file happens to run, and never on a filtered run.
+    for (const match of line.matchAll(/require\('(\.[^']+)'\)/g)) {
+      const base = path.resolve(path.dirname(file), match[1]);
+      const resolves = [base, `${base}.js`, `${base}.json`, path.join(base, 'index.js')]
+        .some((candidate) => fs.existsSync(candidate));
+      if (!resolves) {
+        report(file, number, `relative import '${match[1]}' does not resolve to a file`);
+      }
+    }
+    if (/^\s*debugger\s*;?\s*$/.test(line)) {
+      report(file, number, 'debugger statement left in place');
+    }
   });
 
   // `relative` is POSIX-normalised, so compare against '/helpers/'.
@@ -162,8 +185,20 @@ function lintJavaScript(file) {
 
 function lintText(file, source) {
   const extension = path.extname(file);
-  if (['.yml', '.yaml'].includes(extension) && /^\t/m.test(source)) {
+  if (['.yml', '.yaml'].includes(extension.toLowerCase()) && /^\t/m.test(source)) {
     report(file, 1, 'YAML must be indented with spaces, not tabs');
+  }
+  // A workflow action referenced by a mutable tag or branch can be repointed at
+  // hostile code between two runs of the same commit. Require an immutable
+  // 40-character commit SHA (Dependabot keeps it current).
+  const relative = path.relative(ROOT, file).split(path.sep).join('/');
+  if (relative.startsWith('.github/workflows/')) {
+    source.split('\n').forEach((line, index) => {
+      const used = line.match(/^\s*(?:-\s+)?uses:\s*(\S+)@(\S+)/);
+      if (used && !/^[0-9a-f]{40}$/.test(used[2])) {
+        report(file, index + 1, `action ${used[1]} is not pinned to a commit SHA`);
+      }
+    });
   }
   if (source.length > 0 && !source.endsWith('\n')) {
     report(file, source.split('\n').length, 'file does not end with a newline');
@@ -202,6 +237,9 @@ function main() {
   const tracked = walk(ROOT).filter((file) => {
     const relative = path.relative(ROOT, file).split(path.sep).join('/');
     if (relative.startsWith('.git/') || relative.startsWith('node_modules/')) {
+      return false;
+    }
+    if (SKIP_FILES.has(relative)) {
       return false;
     }
     return !BINARY_EXTENSIONS.has(path.extname(file).toLowerCase());

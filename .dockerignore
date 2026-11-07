@@ -25,6 +25,9 @@ tools
 docker-compose.yml
 CONTRIBUTING.md
 SECURITY.md
+CHANGELOG.md
+.repo-meta.json
+datafactor-ops
 
 # `img/glyphicons.png` is a symlink to ../glyphicons.png; the Dockerfile copies
 # the sprite directly, so the link is not needed in the build context.

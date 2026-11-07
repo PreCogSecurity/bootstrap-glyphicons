@@ -148,6 +148,22 @@ test.describe('published file list', () => {
     assert.deepEqual(stale, [], `files[] references paths that do not exist: ${stale.join(', ')}`);
   });
 
+  test('the img/ sprite is a real file so npm publishes it', () => {
+    // npm omits symlinks from the published tarball. `img/glyphicons.png` is a
+    // real copy precisely so the css/ url(../img/glyphicons.png) resolves in a
+    // consumer's install.
+    const mirror = path.join(ROOT, 'img', 'glyphicons.png');
+    assert.ok(fs.existsSync(mirror), 'img/glyphicons.png is missing');
+    assert.ok(
+      fs.lstatSync(mirror).isFile(),
+      'img/glyphicons.png must be a regular file, not a symlink npm would drop'
+    );
+    assert.ok(
+      fs.readFileSync(mirror).equals(fs.readFileSync(PATHS.SPRITE)),
+      'img/glyphicons.png must be byte-identical to glyphicons.png'
+    );
+  });
+
   test('the css and img directories contain only what is published', () => {
     const onDisk = [...listFiles(PATHS.CSS_DIR), ...listFiles(path.join(ROOT, 'img'))];
     const unpublished = onDisk.filter((file) => !isPublished(file, files));
