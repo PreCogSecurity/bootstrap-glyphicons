@@ -11,7 +11,6 @@
  */
 
 const fs = require('node:fs');
-const path = require('node:path');
 
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
@@ -51,28 +50,4 @@ function readPngHeader(file) {
   return { width, height, bitDepth: buffer[24], colorType: buffer[25], bytes: buffer.length };
 }
 
-/**
- * Resolve `img/glyphicons.png` to the file that actually holds sprite bytes.
- *
- * The repository ships that path as a symlink to `../glyphicons.png`. Git
- * checkouts on Windows with `core.symlinks=false` (the default without
- * Developer Mode) materialise the symlink as a *text file containing the link
- * target*, so both shapes have to be accepted or the suite would only pass on
- * Unix.
- */
-function resolveSprite(fromFile) {
-  const stats = fs.lstatSync(fromFile);
-  if (stats.isSymbolicLink()) {
-    return fs.realpathSync(fromFile);
-  }
-  const contents = fs.readFileSync(fromFile, 'utf8').trim();
-  if (/^\.{0,2}[\\/]?[^\\/\r\n]+$/.test(contents)) {
-    const candidate = path.resolve(path.dirname(fromFile), contents);
-    if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
-      return fs.realpathSync(candidate);
-    }
-  }
-  return fs.realpathSync(fromFile);
-}
-
-module.exports = { readPngHeader, resolveSprite };
+module.exports = { readPngHeader };

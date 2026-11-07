@@ -5,9 +5,8 @@
 # The sprite is binary: never let git treat it as text or apply EOL conversion.
 *.png binary
 
-# `img/glyphicons.png` is a symlink to ../glyphicons.png, not a copy. Keep it
-# recorded as a link on every platform instead of letting autocrlf rewrite the
-# link target text.
+# `img/glyphicons.png` is a real copy, not a symlink: npm does not publish
+# symlinks, and both shipped stylesheets reference this exact path.
 img/glyphicons.png -text
 
 # Lockfiles and pins are read verbatim.

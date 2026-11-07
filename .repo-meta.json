@@ -1,0 +1,7 @@
+{
+  "project_type": "static-asset-library",
+  "primary_language": "JavaScript",
+  "runtime": "none",
+  "infrastructure_as_code": false,
+  "classification_note": "Static CSS and PNG asset pack for Bootstrap v2; no server, runtime, or IaC."
+}

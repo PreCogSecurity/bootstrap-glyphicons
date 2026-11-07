@@ -19,23 +19,30 @@ concurrency:
 
 jobs:
   lint:
-    name: Lint and dependency audit
+    name: Lint, dependency audit and SBOM
     runs-on: ubuntu-latest
+    # A hung install or audit must not occupy a runner indefinitely.
+    timeout-minutes: 10
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        # Pinned to an immutable commit SHA: a mutable tag can be repointed at
+        # hostile code between runs. Dependabot updates the SHA and comment.
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           # Do not leave the job's token in .git/config for later steps to read.
           persist-credentials: false
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version-file: .nvmrc
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        # --ignore-scripts: this package has no dependencies and must never run
+        # lifecycle code in CI. If that ever changes, the failure should be
+        # deliberate, not automatic.
+        run: npm ci --ignore-scripts
 
       - name: Run lint
         run: npm run lint
@@ -47,9 +54,24 @@ jobs:
         # anything a consumer could realistically be harmed by.
         run: npm audit --audit-level=high
 
+      - name: Record dependency inventory (SBOM)
+        # The manifest declares zero dependencies; this artifact is the
+        # verifiable proof, and the command fails if the installed tree drifts
+        # from the manifest.
+        run: npm ls --all --json > sbom.json
+
+      - name: Upload dependency inventory
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: sbom
+          path: sbom.json
+          if-no-files-found: error
+          retention-days: 7
+
   test:
     name: Test (Node ${{ matrix.node }})
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
@@ -59,20 +81,17 @@ jobs:
         node: ['20', '22', '24']
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: ${{ matrix.node }}
           cache: npm
 
       - name: Install dependencies
-        # --ignore-scripts: this package has no dependencies and must never run
-        # lifecycle code in CI. If that ever changes, the failure should be
-        # deliberate, not automatic.
         run: npm ci --ignore-scripts
 
       - name: Run verification tests

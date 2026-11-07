@@ -1,0 +1,97 @@
+{
+  "repo": "PreCogSecurity/bootstrap-glyphicons",
+  "assessment": "2026-11-06T113401-eda8e7a94c8b40d4babc49141795f563",
+  "baseline": {
+    "overall_score": 50.9,
+    "overall_grade": "D",
+    "tests": "69 passing (npm test)",
+    "lint": "clean (npm run lint)"
+  },
+  "verification": {
+    "commands": [
+      "npm run lint",
+      "npm test",
+      "npm run verify",
+      "npm pack --dry-run",
+      "tar -tzf <packed tarball>",
+      "python -c \"import yaml; ...\" ci.yml dependabot.yml docker-compose.yml",
+      "node -e \"npm ls --all --json -> JSON parse\""
+    ],
+    "results": {
+      "lint": "clean (10 JS files, 20 text files)",
+      "tests": "84 passing, 0 failing",
+      "tarball": "7 files; includes package/img/glyphicons.png",
+      "yaml": "valid",
+      "sbom": "valid JSON, 0 dependencies"
+    },
+    "not_run": [
+      "docker / docker compose (engine unreachable from this session)",
+      "nginx -t (nginx binary unavailable; config validated statically by tests)",
+      "GitHub Actions execution (workflow validated statically)"
+    ]
+  },
+  "features": [
+    {
+      "id": "install-and-test-from-fresh-clone",
+      "status": "verified",
+      "test": "npm test (84 passing; no install required)"
+    },
+    {
+      "id": "classification-metadata",
+      "status": "verified",
+      "test": "node --test tests/hardening.test.js"
+    },
+    {
+      "id": "changelog",
+      "status": "verified",
+      "test": "node --test tests/hardening.test.js"
+    },
+    {
+      "id": "ci-action-pinning",
+      "status": "verified",
+      "test": "node --test tests/hardening.test.js && npm run lint"
+    },
+    {
+      "id": "ci-sbom-artifact",
+      "status": "verified",
+      "test": "node --test tests/hardening.test.js"
+    },
+    {
+      "id": "ci-install-and-timeout-hardening",
+      "status": "verified",
+      "test": "node --test tests/hardening.test.js"
+    },
+    {
+      "id": "preview-container-hardening",
+      "status": "verified",
+      "test": "node --test tests/hardening.test.js tests/docker-preview.test.js"
+    },
+    {
+      "id": "linter-supply-chain-checks",
+      "status": "verified",
+      "test": "npm run lint"
+    },
+    {
+      "id": "docs-sync",
+      "status": "verified",
+      "test": "node --test tests/docs.test.js tests/hardening.test.js"
+    },
+    {
+      "id": "published-sprite-copy",
+      "status": "verified",
+      "test": "node --test tests/published-package.test.js tests/sprite-integrity.test.js"
+    },
+    {
+      "id": "typescript-checkjob",
+      "status": "blocked",
+      "reason": "tsc needs @types/node for node: imports; devDependencies are forbidden by the package contract.",
+      "test": "npx --yes --package typescript@5.6.3 tsc --noEmit --allowJs --checkJs <probe>.js"
+    },
+    {
+      "id": "commit-history-cadence",
+      "status": "blocked",
+      "reason": "History cannot be fabricated from a working tree; left as process guidance for the human owner.",
+      "test": "no-tests"
+    }
+  ]
+}

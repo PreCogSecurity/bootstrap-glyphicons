@@ -28,6 +28,9 @@ zero-dependency, so there is nothing to install before you start.
    npm run lint
    ```
 
+   `npm run verify` runs both in one step; it is the same aggregate check CI
+   requires before a merge.
+
    `npm test` asserts that:
 
    - every `.icon-large.icon-<name>` class has a `background-position` rule
@@ -52,6 +55,9 @@ zero-dependency, so there is nothing to install before you start.
    the same commit — each icon set or fix should be its own commit so the
    history stays reviewable.
 
+   Add a `CHANGELOG.md` entry under `Unreleased` in the same commit, naming the
+   icon and the bug it fixes.
+
 ## House rules
 
 - **Stay dependency-free.** Do not add anything to `dependencies` or
@@ -64,6 +70,9 @@ zero-dependency, so there is nothing to install before you start.
   that reaches a third party turns every icon into someone else's request.
 - **Do not add lifecycle scripts** (`preinstall`, `postinstall`, `prepare`, …).
   They execute on a consumer's machine.
+- **Pin CI actions to commit SHAs.** A mutable tag can be repointed at hostile
+  code between runs; `npm run lint` rejects any workflow action that is not a
+  40-character SHA.
 - Match the surrounding style: two-space indent, `const` over `let`/`var`,
   `require('node:…')` with the `node:` prefix, `'use strict'` at the top of
   every file, and lines under 120 characters.

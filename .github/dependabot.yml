@@ -16,8 +16,8 @@ updates:
     labels:
       - dependencies
 
-  # GitHub Actions are pinned by tag in the workflows; this keeps those tags
-    # (and the Node runtime they install) current.
+  # GitHub Actions are pinned to commit SHAs in the workflows; this keeps those
+  # SHAs (and the Node runtime they install) current.
   - package-ecosystem: github-actions
     directory: /
     schedule:
